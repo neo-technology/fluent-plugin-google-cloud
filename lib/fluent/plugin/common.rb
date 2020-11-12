@@ -174,6 +174,36 @@ module Common
       @ec2_metadata
     end
 
+    def ec2_userdata(platform)
+      raise "Called ec2_metadata with platform=#{platform}" unless
+          platform == Platform::EC2
+      unless @ec2_userdata
+        # See http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-instance-metadata.html
+        http = Net::HTTP.new(METADATA_SERVICE_ADDR, 80)
+
+        info_req = Net::HTTP::Get.new('http://' + METADATA_SERVICE_ADDR +
+                                          '/latest/user-data')
+        info_res = http.request(info_req)
+        if info_res.is_a?(Net::HTTPUnauthorized)
+          token_req = Net::HTTP::Put.new('http://' + METADATA_SERVICE_ADDR +
+                                             '/latest/api/token')
+          token_req['X-aws-ec2-metadata-token-ttl-seconds'] = '21600'
+          token_res = http.request(token_req)
+          raise "Unable to fetch metadata token. code=#{token_res.code}" unless
+              token_res.is_a?(Net::HTTPSuccess)
+
+          info_req['X-aws-ec2-metadata-token'] = token_res.body
+          info_res = http.request(info_req)
+          raise "Unable to fetch metadata info. code=#{info_res.code}" unless
+              info_res.is_a?(Net::HTTPSuccess)
+        end
+
+        @ec2_userdata = info_res.body
+      end
+
+      @ec2_userdata
+    end
+
     # Check required variables like @project_id, @vm_id, @vm_name and @zone.
     def check_required_metadata_variables(platform, project_id, zone, vm_id)
       missing = []
@@ -344,11 +374,17 @@ module Common
 
       # EC2.
       when EC2_CONSTANTS[:resource_type]
-        raise "Cannot construct a #{type} resource without vm_id and zone" \
-          unless vm_id && zone
+        raise "Cannot construct a #{type} resource without "\
+              'vm_id, zone and platform' \
+          unless vm_id && zone && platform
         labels = {
           'instance_id' => vm_id,
-          'region' => zone
+          'region' => zone,
+          'cluster_name' =>
+              ec2_userdata(platform)[
+                  %r{^\/etc\/eks\/bootstrap\.sh (.*[0-9]+) .*},
+                  1
+              ]
         }
         labels['aws_account'] = ec2_metadata(platform)['accountId'] if
           ec2_metadata(platform).key?('accountId')

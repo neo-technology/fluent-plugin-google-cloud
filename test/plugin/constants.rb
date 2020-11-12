@@ -93,6 +93,19 @@ module Constants
     "instanceId" : "#{EC2_VM_ID}"
   }).freeze
 
+  EKS_CLUSTER_NAME = 'name-orch-0001'.freeze
+  # rubocop:disable LineLength
+  EC2_USERDATA = %(
+#!/bin/bash
+set -ex
+B64_CLUSTER_CA=abcde
+API_SERVER_URL=https://example.com
+K8S_CLUSTER_DNS_IP=1.1.1.1
+/etc/eks/bootstrap.sh #{EKS_CLUSTER_NAME} --kubelet-extra-args '--node-labels=a=1,b=2'
+
+  ).freeze
+  # rubocop:enable LineLength
+
   # Managed VMs specific labels.
   MANAGED_VM_BACKEND_NAME = 'default'.freeze
   MANAGED_VM_BACKEND_VERSION = 'guestbook2.0'.freeze
@@ -831,7 +844,8 @@ module Constants
       labels: {
         'instance_id' => EC2_VM_ID,
         'region' => EC2_PREFIXED_REGION,
-        'aws_account' => EC2_ACCOUNT_ID
+        'aws_account' => EC2_ACCOUNT_ID,
+        'cluster_name' => EKS_CLUSTER_NAME
       }
     },
     log_name: 'test',

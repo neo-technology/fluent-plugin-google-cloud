@@ -83,6 +83,10 @@ module Utils
                  'instance-identity/document')
       .to_return(body: EC2_IDENTITY_DOCUMENT, status: 200,
                  headers: { 'Content-Length' => EC2_IDENTITY_DOCUMENT.length })
+
+    stub_request(:get, 'http://169.254.169.254/latest/user-data')
+      .to_return(body: EC2_USERDATA, status: 200,
+                 headers: { 'Content-Length' => EC2_USERDATA.length })
   end
 
   def setup_auth_stubs(base_url)
