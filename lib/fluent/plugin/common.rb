@@ -175,6 +175,7 @@ module Common
     end
 
     def ec2_userdata(platform)
+      @log.info 'ec2_userdata was called'
       raise "Called ec2_metadata with platform=#{platform}" unless
           platform == Platform::EC2
       unless @ec2_userdata
@@ -270,6 +271,7 @@ module Common
 
     # Create a monitored resource from type and labels.
     def create_monitored_resource(type, labels)
+      @log.info "create_monitored_resource got labels: #{labels}"
       Google::Apis::LoggingV2::MonitoredResource.new(
         type: type, labels: labels.to_h)
     end
@@ -374,17 +376,15 @@ module Common
 
       # EC2.
       when EC2_CONSTANTS[:resource_type]
-        raise "Cannot construct a #{type} resource without "\
-              'vm_id, zone and platform' \
-          unless vm_id && zone && platform
+        raise "Cannot construct a #{type} resource without vm_id and zone" \
+          unless vm_id && zone
+        userdata = ec2_userdata(platform)
+        cluster_name = userdata[%r{^\/etc\/eks\/bootstrap\.sh (.*[0-9]+) .*}, 1]
+        @log.info "cluster_name is #{cluster_name}"
         labels = {
           'instance_id' => vm_id,
           'region' => zone,
-          'cluster_name' =>
-              ec2_userdata(platform)[
-                  %r{^\/etc\/eks\/bootstrap\.sh (.*[0-9]+) .*},
-                  1
-              ]
+          'cluster_name' => cluster_name
         }
         labels['aws_account'] = ec2_metadata(platform)['accountId'] if
           ec2_metadata(platform).key?('accountId')
