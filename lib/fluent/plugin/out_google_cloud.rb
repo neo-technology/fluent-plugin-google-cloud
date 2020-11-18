@@ -2037,6 +2037,15 @@ module Fluent
       @k8s_cluster_name = nil if @k8s_cluster_name == ''
       @k8s_cluster_location = nil if @k8s_cluster_location == ''
 
+      begin
+        @k8s_cluster_name ||= @utils.fetch_gce_metadata(
+          @platform, 'instance/attributes/cluster-name')
+        @k8s_cluster_location ||= @utils.fetch_gce_metadata(
+          @platform, 'instance/attributes/cluster-location')
+      rescue StandardError => e
+        @log.error 'Failed to retrieve k8s cluster name and location.', \
+                   error: e
+      end
       case resource_type
       when K8S_CONTAINER_CONSTANTS[:resource_type]
         labels = {
