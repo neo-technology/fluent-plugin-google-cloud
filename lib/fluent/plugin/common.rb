@@ -58,7 +58,7 @@ module Common
     }.freeze
     EC2_CONSTANTS = {
       service: 'ec2.amazonaws.com',
-      resource_type: 'aws_ec2_instance'
+      resource_type: 'k8s_node'
     }.freeze
     ML_CONSTANTS = {
       service: 'ml.googleapis.com',
