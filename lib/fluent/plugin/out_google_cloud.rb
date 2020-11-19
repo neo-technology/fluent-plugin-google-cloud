@@ -2031,7 +2031,7 @@ module Fluent
           \.(?<pod_name>[.0-9a-z-]+)$/x =~ local_resource_id ||
         /^
           (?<resource_type>k8s_node)
-          \.(?<node_name>[0-9a-z-]+)$/x =~ local_resource_id
+          \.(?<node_name>[0-9a-z-.]+)$/x =~ local_resource_id
 
       # Clear name and location if they're explicitly set to empty.
       @k8s_cluster_name = nil if @k8s_cluster_name == ''
